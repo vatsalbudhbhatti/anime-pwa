@@ -5,6 +5,18 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Anime Explorer</title>
+
+  <!-- PWA Meta Tags -->
+  <meta name="theme-color" content="#1c1f26">
+  <meta name="description" content="Discover and explore upcoming anime series">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="apple-mobile-web-app-title" content="AnimeXplorer">
+
+  <!-- PWA Links -->
+  <link rel="manifest" href="/manifest.json">
+  <link rel="apple-touch-icon" href="/icons/icon-192x192.png">
+
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
   <style>
     :root {
@@ -41,6 +53,36 @@
       top: 0;
       z-index: 100;
       border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    #installPrompt {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--card-bg);
+      padding: 1rem;
+      border-radius: 12px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      display: none;
+      z-index: 1000;
+      text-align: center;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    #installPrompt button {
+      background: var(--primary);
+      color: white;
+      border: none;
+      padding: 0.5rem 1rem;
+      border-radius: 6px;
+      margin-top: 0.5rem;
+      cursor: pointer;
+      transition: opacity 0.3s ease;
+    }
+
+    #installPrompt button:hover {
+      opacity: 0.9;
     }
 
     .header-content {
@@ -349,6 +391,11 @@
     <p>Discovering upcoming anime...</p>
   </div>
 
+  <div id="installPrompt">
+    <p>Install Anime Explorer for a better experience!</p>
+    <button id="installButton">Install App</button>
+  </div>
+
   <script>
     let page = 1;
     let isLoading = false;
@@ -545,6 +592,38 @@
 
     // Initial load
     loadMoreAnime();
+  </script>
+  <script>
+    // PWA Install Prompt
+    let deferredPrompt;
+    const installPrompt = document.getElementById('installPrompt');
+    const installButton = document.getElementById('installButton');
+
+    window.addEventListener('beforeinstallprompt', (e) => {
+      // Prevent Chrome 67 and earlier from automatically showing the prompt
+      e.preventDefault();
+      // Stash the event so it can be triggered later
+      deferredPrompt = e;
+      // Show the install button
+      installPrompt.style.display = 'block';
+    });
+
+    installButton.addEventListener('click', async () => {
+      if (!deferredPrompt) return;
+      // Show the install prompt
+      deferredPrompt.prompt();
+      // Wait for the user to respond to the prompt
+      const { outcome } = await deferredPrompt.userChoice;
+      // We've used the prompt, and can't use it again, discard it
+      deferredPrompt = null;
+      // Hide the install button
+      installPrompt.style.display = 'none';
+    });
+
+    // Hide the install prompt if app is already installed
+    window.addEventListener('appinstalled', () => {
+      installPrompt.style.display = 'none';
+    });
   </script>
 </body>
 
