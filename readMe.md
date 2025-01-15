@@ -29,7 +29,7 @@ A simple, progressive web application that displays anime information with offli
 
 1. Clone the repository or download the files:
 ```bash
-git clone <repository-url>
+git clone git@github.com:vatsalbudhbhatti/anime-pwa.git
 ```
 
 2. Set up a local web server. You can use any of these methods:
