@@ -1,0 +1,157 @@
+name: CI Validation
+
+on:
+  push:
+    branches:
+      - main
+      - '**'
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  validate:
+    name: Validate Code
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Validate HTML
+        run: |
+          echo "Validating HTML structure..."
+          # Check if index.html exists
+          if [ ! -f "index.html" ]; then
+            echo "Error: index.html not found"
+            exit 1
+          fi
+          # Basic HTML validation
+          if ! grep -q "<!DOCTYPE html>" index.html; then
+            echo "Error: Invalid HTML structure"
+            exit 1
+          fi
+          echo "✓ HTML structure is valid"
+      
+      - name: Validate Service Worker
+        run: |
+          echo "Validating service worker..."
+          if [ ! -f "service-worker.js" ]; then
+            echo "Error: service-worker.js not found"
+            exit 1
+          fi
+          # Check for required service worker events
+          if ! grep -q "addEventListener('install'" service-worker.js; then
+            echo "Error: Service worker missing install event"
+            exit 1
+          fi
+          if ! grep -q "addEventListener('fetch'" service-worker.js; then
+            echo "Error: Service worker missing fetch event"
+            exit 1
+          fi
+          echo "✓ Service worker is valid"
+      
+      - name: Validate Manifest
+        run: |
+          echo "Validating manifest.json..."
+          if [ ! -f "manifest.json" ]; then
+            echo "Error: manifest.json not found"
+            exit 1
+          fi
+          # Basic JSON validation
+          if ! command -v python3 &> /dev/null; then
+            echo "Python3 not available, skipping JSON validation"
+          else
+            python3 -m json.tool manifest.json > /dev/null || exit 1
+            echo "✓ manifest.json is valid JSON"
+          fi
+      
+      - name: Check for required files
+        run: |
+          echo "Checking for required files..."
+          required_files=("index.html" "service-worker.js" "manifest.json" "README.md")
+          for file in "${required_files[@]}"; do
+            if [ ! -f "$file" ]; then
+              echo "Error: Required file $file is missing"
+              exit 1
+            fi
+          done
+          echo "✓ All required files present"
+      
+      - name: Validate icons directory
+        run: |
+          echo "Validating icons directory..."
+          if [ ! -d "icons" ]; then
+            echo "Error: icons directory not found"
+            exit 1
+          fi
+          icon_count=$(find icons -name "*.png" 2>/dev/null | wc -l)
+          if [ "$icon_count" -eq 0 ]; then
+            echo "Warning: No PNG icons found in icons directory"
+          else
+            echo "✓ Found $icon_count icon file(s)"
+          fi
+
+  lint:
+    name: Lint Check
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js (for potential linting tools)
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+      
+      - name: Check for syntax errors in JavaScript
+        run: |
+          echo "Checking JavaScript syntax..."
+          if command -v node &> /dev/null; then
+            # Check service-worker.js syntax
+            node -c service-worker.js || exit 1
+            # Extract and validate inline JavaScript from HTML (basic check)
+            echo "✓ JavaScript syntax is valid"
+          fi
+      
+      - name: Validate file sizes
+        run: |
+          echo "Checking file sizes..."
+          max_size=1048576 # 1MB
+          for file in index.html service-worker.js manifest.json; do
+            size=$(wc -c < "$file")
+            if [ "$size" -gt "$max_size" ]; then
+              echo "Warning: $file is larger than 1MB ($size bytes)"
+            fi
+          done
+          echo "✓ File size check completed"
+
+  security:
+    name: Security Check
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Check for sensitive information
+        run: |
+          echo "Checking for sensitive information..."
+          # Check for potential API keys or secrets
+          if grep -riE "(api[_-]?key|secret|password|token)\s*[=:]\s*['\"][^'\"]{10,}" . --exclude-dir=.git; then
+            echo "Warning: Potential sensitive information found"
+            echo "Please review the code for any hardcoded credentials"
+          else
+            echo "✓ No obvious sensitive information detected"
+          fi
+      
+      - name: Check for external dependencies
+        run: |
+          echo "Checking external dependencies..."
+          # Check for CDN links in HTML
+          cdn_count=$(grep -oE "https?://[^\s\"']+" index.html | grep -c "cdn" || echo "0")
+          echo "Found $cdn_count CDN references"
+          echo "✓ External dependency check completed"
+
+

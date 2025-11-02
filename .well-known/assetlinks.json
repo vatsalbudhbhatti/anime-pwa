@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.samarth.animeexplorer",
+      "sha256_cert_fingerprints": [
+        "F2:C1:48:6B:90:98:03:3B:21:34:F5:FC:44:E1:1C:1A:FE:3D:27:2A:28:23:F1:71:EB:2C:48:1E:6F:B9:B7:87"
+      ]
+    }
+  }
+]
